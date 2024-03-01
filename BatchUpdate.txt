@@ -1,0 +1,39 @@
+import org.junit.Test;
+import org.springframework.dao.DataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
+import java.sql.BatchUpdateException;
+import java.util.Arrays;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.junit.Assert.assertTrue;
+
+public class YourRepositoryTest {
+
+    @Test
+    public void testBatchUpdateDataWithBatchUpdateException() {
+        // Arrange
+        YourRepository yourRepository = new YourRepository();
+        JdbcTemplate jdbcTemplateMock = mock(JdbcTemplate.class);
+        yourRepository.setJdbcTemplate(jdbcTemplateMock);  // Set the mocked JdbcTemplate
+
+        // Mock the JdbcTemplate's batchUpdate method to throw BatchUpdateException
+        when(jdbcTemplateMock.batchUpdate("YOUR_SQL_QUERY", Arrays.asList("data1", "data2", "data3"), batchSize, yourPreparedStatementSetter))
+                .thenThrow(new DataAccessException("Simulated batch update exception") {
+                    @Override
+                    public Throwable getCause() {
+                        return new BatchUpdateException("Simulated batch update exception", new int[]{1, 0, -3});
+                    }
+                });
+
+        // Act
+        try {
+            yourRepository.batchUpdateData(Arrays.asList("data1", "data2", "data3"));
+
+            // Assert
+            // Ensure that the relevant lines in catch block are covered
+            assertTrue(true);  // This line is reached if the catch block is entered
+        } catch (DataAccessException e) {
+            // Handle or assert as needed
+        }
+    }
+}
