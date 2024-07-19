@@ -1,0 +1,130 @@
+Java Design: I have 2 different API calls for Transaction.  I will be getting almost the same attributes except a few. How to consolidate the records coming from Both API Calls in my service before sending it to UI
+ChatGPT
+To consolidate records from two different API calls in your service layer before sending them to the UI, you can follow these steps:
+
+Define a Common Data Model:
+
+Create a common class that contains all the attributes from both API responses. Include all necessary fields that will be displayed on the UI.
+Fetch Data from Both APIs:
+
+Call both APIs and retrieve the responses. This can be done sequentially or in parallel using CompletableFuture for asynchronous processing.
+Transform API Responses:
+
+Map the responses from both APIs to the common data model. This might involve converting, merging, or discarding certain attributes.
+Merge Data:
+
+Consolidate the records from both API calls into a single collection.
+Return the Consolidated Data:
+
+Send the consolidated collection to the UI.
+Here’s an example implementation:
+
+Step 1: Define the Common Data Model
+java
+Copy code
+public class TransactionDTO {
+    private String id;
+    private String commonAttribute1;
+    private String commonAttribute2;
+    // Add other common attributes
+    private String apiSpecificAttribute1;
+    private String apiSpecificAttribute2;
+    // Getters and setters
+}
+Step 2: Fetch Data from Both APIs
+java
+Copy code
+@Service
+public class TransactionService {
+    @Autowired
+    private ApiService apiService1;
+
+    @Autowired
+    private ApiService apiService2;
+
+    public List<TransactionDTO> getConsolidatedTransactions() {
+        CompletableFuture<List<TransactionDTO>> future1 = CompletableFuture.supplyAsync(() -> apiService1.getTransactions());
+        CompletableFuture<List<TransactionDTO>> future2 = CompletableFuture.supplyAsync(() -> apiService2.getTransactions());
+
+        List<TransactionDTO> result1 = future1.join();
+        List<TransactionDTO> result2 = future2.join();
+
+        return mergeTransactions(result1, result2);
+    }
+}
+Step 3: Transform API Responses
+Assuming ApiService1 and ApiService2 have different response models, transform them to TransactionDTO:
+
+java
+Copy code
+@Service
+public class ApiService1 {
+    public List<TransactionDTO> getTransactions() {
+        // Fetch data from API1
+        List<Api1Response> api1Responses = callApi1();
+        // Map to TransactionDTO
+        return api1Responses.stream().map(this::mapToTransactionDTO).collect(Collectors.toList());
+    }
+
+    private TransactionDTO mapToTransactionDTO(Api1Response response) {
+        TransactionDTO dto = new TransactionDTO();
+        dto.setId(response.getId());
+        dto.setCommonAttribute1(response.getCommonAttribute1());
+        dto.setApiSpecificAttribute1(response.getSpecificAttribute1());
+        // Map other fields
+        return dto;
+    }
+}
+
+@Service
+public class ApiService2 {
+    public List<TransactionDTO> getTransactions() {
+        // Fetch data from API2
+        List<Api2Response> api2Responses = callApi2();
+        // Map to TransactionDTO
+        return api2Responses.stream().map(this::mapToTransactionDTO).collect(Collectors.toList());
+    }
+
+    private TransactionDTO mapToTransactionDTO(Api2Response response) {
+        TransactionDTO dto = new TransactionDTO();
+        dto.setId(response.getId());
+        dto.setCommonAttribute1(response.getCommonAttribute1());
+        dto.setApiSpecificAttribute2(response.getSpecificAttribute2());
+        // Map other fields
+        return dto;
+    }
+}
+Step 4: Merge Data
+java
+Copy code
+private List<TransactionDTO> mergeTransactions(List<TransactionDTO> list1, List<TransactionDTO> list2) {
+    List<TransactionDTO> mergedList = new ArrayList<>();
+    mergedList.addAll(list1);
+    mergedList.addAll(list2);
+    return mergedList;
+}
+Step 5: Return the Consolidated Data
+Now, the getConsolidatedTransactions method in TransactionService will return the consolidated list of transactions to the controller, which can then be sent to the UI.
+
+Example Controller
+java
+Copy code
+@RestController
+@RequestMapping("/transactions")
+public class TransactionController {
+    @Autowired
+    private TransactionService transactionService;
+
+    @GetMapping
+    public ResponseEntity<List<TransactionDTO>> getTransactions() {
+        List<TransactionDTO> transactions = transactionService.getConsolidatedTransactions();
+        return ResponseEntity.ok(transactions);
+    }
+}
+This setup ensures that data from both APIs is properly transformed and consolidated before being sent to the UI.
+
+
+
+
+
+
