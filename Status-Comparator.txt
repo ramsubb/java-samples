@@ -1,0 +1,79 @@
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+public class TransactionSorter {
+    public static void main(String[] args) {
+        List<Transaction> transactions = new ArrayList<>();
+        
+        // Populate transactions list with Transaction objects
+        // transactions.add(new Transaction("Declined", LocalDateTime.now()));
+        // transactions.add(new Transaction("Pending", LocalDateTime.now().minusDays(1)));
+        // ... add more transactions
+
+        // Custom comparator for status
+        Comparator<String> statusComparator = (status1, status2) -> {
+            List<String> order = List.of("Declined", "Pending", "Posted");
+            return Integer.compare(order.indexOf(status1), order.indexOf(status2));
+        };
+
+        // Group by status and sort by dateTime within each group
+        Map<String, List<Transaction>> groupedTransactions = transactions.stream()
+            .collect(Collectors.groupingBy(Transaction::getStatus));
+        
+        // Sort the map by the custom status comparator and sort each group by dateTime
+        List<Transaction> sortedTransactions = groupedTransactions.entrySet().stream()
+            .sorted(Map.Entry.comparingByKey(statusComparator))
+            .flatMap(entry -> entry.getValue().stream().sorted(Comparator.comparing(Transaction::getDateTime)))
+            .collect(Collectors.toList());
+
+        // Print sorted transactions
+        sortedTransactions.forEach(System.out::println);
+    }
+}
+
+class Transaction {
+    private String status;
+    private LocalDateTime dateTime;
+
+    public Transaction(String status, LocalDateTime dateTime) {
+        this.status = status;
+        this.dateTime = dateTime;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public LocalDateTime getDateTime() {
+        return dateTime;
+    }
+
+    @Override
+    public String toString() {
+        return "Transaction{" +
+                "status='" + status + '\'' +
+                ", dateTime=" + dateTime +
+                '}';
+    }
+}
+Explanation:
+Custom Comparator for Status:
+
+A Comparator<String> is defined to compare statuses based on a predefined order.
+Grouping by Status:
+
+The transactions are grouped by their status using Collectors.groupingBy.
+Sorting within Groups:
+
+The groups are sorted by the custom status comparator, and then each group's transactions are sorted by dateTime.
+Flattening the Sorted Groups:
+
+The sorted groups are flattened back into a single list using flatMap.
+Printing the Sorted Transactions:
+
+The sorted transactions are printed.
+This approach ensures that the transactions are grouped and sorted as required.
