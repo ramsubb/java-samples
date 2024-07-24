@@ -1,0 +1,118 @@
+Define the Enum
+First, define the Status enum:
+
+java
+Copy code
+public enum Status {
+    DECLINED, PENDING, POSTED
+}
+Modify the Transaction Class
+Update the Transaction class to use the Status enum:
+
+java
+Copy code
+import java.time.LocalDateTime;
+
+public class Transaction {
+    private Status status;
+    private LocalDateTime dateTime;
+
+    public Transaction(Status status, LocalDateTime dateTime) {
+        this.status = status;
+        this.dateTime = dateTime;
+    }
+
+    public Status getStatus() {
+        return status;
+    }
+
+    public LocalDateTime getDateTime() {
+        return dateTime;
+    }
+
+    @Override
+    public String toString() {
+        return "Transaction{" +
+                "status=" + status +
+                ", dateTime=" + dateTime +
+                '}';
+    }
+}
+EnumStatusComparator Class
+Create the EnumStatusComparator class to compare the statuses based on their order:
+
+java
+Copy code
+import java.util.Comparator;
+import java.util.List;
+
+public class EnumStatusComparator implements Comparator<Status> {
+    private final List<Status> order;
+
+    public EnumStatusComparator() {
+        this.order = List.of(Status.DECLINED, Status.PENDING, Status.POSTED);
+    }
+
+    @Override
+    public int compare(Status status1, Status status2) {
+        return Integer.compare(order.indexOf(status1), order.indexOf(status2));
+    }
+}
+Main Class
+Update the main class to use the EnumStatusComparator:
+
+java
+Copy code
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+public class TransactionSorter {
+    public static void main(String[] args) {
+        List<Transaction> transactions = new ArrayList<>();
+        
+        // Populate transactions list with Transaction objects
+        transactions.add(new Transaction(Status.DECLINED, LocalDateTime.now()));
+        transactions.add(new Transaction(Status.PENDING, LocalDateTime.now().minusDays(1)));
+        transactions.add(new Transaction(Status.POSTED, LocalDateTime.now().minusDays(2)));
+        transactions.add(new Transaction(Status.PENDING, LocalDateTime.now().minusHours(1)));
+        transactions.add(new Transaction(Status.DECLINED, LocalDateTime.now().minusHours(2)));
+
+        // Instantiate the custom comparator
+        Comparator<Status> statusComparator = new EnumStatusComparator();
+
+        // Group by status and sort by dateTime within each group
+        Map<Status, List<Transaction>> groupedTransactions = transactions.stream()
+            .collect(Collectors.groupingBy(Transaction::getStatus));
+
+        // Sort the map by the custom status comparator and sort each group by dateTime
+        List<Transaction> sortedTransactions = groupedTransactions.entrySet().stream()
+            .sorted(Map.Entry.comparingByKey(statusComparator))
+            .flatMap(entry -> entry.getValue().stream().sorted(Comparator.comparing(Transaction::getDateTime)))
+            .collect(Collectors.toList());
+
+        // Print sorted transactions
+        sortedTransactions.forEach(System.out::println);
+    }
+}
+Explanation:
+Enum Definition:
+
+The Status enum is defined with the values DECLINED, PENDING, and POSTED.
+Transaction Class:
+
+The Transaction class uses the Status enum for the status field.
+EnumStatusComparator Class:
+
+This class implements Comparator<Status> and defines the order of the enum values in the order list.
+The compare method compares the indices of status1 and status2 in the order list.
+Main Class:
+
+Transactions are created using the Status enum values.
+The EnumStatusComparator is instantiated to sort the statuses.
+Transactions are grouped by status, sorted by the custom comparator, and then sorted by dateTime within each group.
+The sorted transactions are printed.
+This setup ensures that transactions are sorted by their status in the predefined order of the Status enum values and then by dateTime within each status group.
