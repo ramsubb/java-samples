@@ -1,0 +1,10 @@
+    @Bean
+    public CacheManager ehCacheManager() {
+        EhcacheCachingProvider provider = (EhcacheCachingProvider) Caching.getCachingProvider();
+        return provider.getCacheManager();
+    }
+
+    @Bean
+    public org.springframework.cache.CacheManager cacheManager(CacheManager ehCacheManager) {
+        return new JCacheCacheManager(ehCacheManager);
+    }
