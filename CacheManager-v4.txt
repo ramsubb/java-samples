@@ -1,0 +1,22 @@
+
+    @Bean
+    public javax.cache.CacheManager ehCacheManager() {
+        CachingProvider cachingProvider = Caching.getCachingProvider();
+        javax.cache.CacheManager cacheManager = cachingProvider.getCacheManager();
+
+        // Ensure the cache is created
+        org.ehcache.CacheManager ehCacheManager = CacheManagerBuilder.newCacheManagerBuilder()
+                .withCache("myCache",
+                        CacheConfigurationBuilder.newCacheConfigurationBuilder(
+                                String.class, String.class, ResourcePoolsBuilder.heap(100))
+                                .build())
+                .build(true);
+
+        return ehCacheManager;
+    }
+
+    @Bean
+    public org.springframework.cache.CacheManager cacheManager(javax.cache.CacheManager ehCacheManager) {
+        return new JCacheCacheManager(ehCacheManager);
+    }
+}
