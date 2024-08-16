@@ -1,0 +1,15 @@
+ @Bean
+    public org.ehcache.CacheManager ehCacheManager() {
+        return CacheManagerBuilder.newCacheManagerBuilder()
+                .withCache("myCache",
+                        CacheConfigurationBuilder.newCacheConfigurationBuilder(
+                                String.class, String.class, ResourcePoolsBuilder.heap(100))
+                                .build())
+                .build(true);
+    }
+
+    @Bean
+    @Override
+    public org.springframework.cache.CacheManager cacheManager() {
+        return new EhCacheCacheManager(ehCacheManager());
+    }
