@@ -1,0 +1,99 @@
+1. Service Method with Caching Using @Cacheable and @CachePut
+Here’s how you can implement it:
+
+java
+Copy code
+@Service
+public class TokenService {
+
+    @Cacheable(value = "tokenCache", key = "#token", unless = "#result == null")
+    public String getCachedTokenResponse(String token) {
+        // This method will return null if the token is not cached
+        return null;
+    }
+
+    @CachePut(value = "tokenCache", key = "#token")
+    public String cacheTokenResponse(String token, String response) {
+        // This method will cache the response for the given token
+        return response;
+    }
+
+    public Map<String, String> getResponsesForTokens(Set<String> tokens) {
+        Map<String, String> responses = new HashMap<>();
+        Set<String> uncachedTokens = new HashSet<>();
+
+        // Step 1: Check cache for each token
+        for (String token : tokens) {
+            String cachedResponse = getCachedTokenResponse(token);
+            if (cachedResponse != null) {
+                responses.put(token, cachedResponse);
+            } else {
+                uncachedTokens.add(token);
+            }
+        }
+
+        // Step 2: Make API call for uncached tokens
+        if (!uncachedTokens.isEmpty()) {
+            String concatenatedTokens = String.join(",", uncachedTokens);
+            String apiResponse = externalApiCall(concatenatedTokens); // API call with concatenated tokens
+
+            Map<String, String> newResponses = parseApiResponse(apiResponse, uncachedTokens);
+
+            // Step 3: Cache the new responses and combine them with cached responses
+            for (Map.Entry<String, String> entry : newResponses.entrySet()) {
+                String token = entry.getKey();
+                String response = entry.getValue();
+
+                // Cache the response for each token
+                cacheTokenResponse(token, response);
+
+                // Add to the final response map
+                responses.put(token, response);
+            }
+        }
+
+        return responses;
+    }
+
+    private String externalApiCall(String concatenatedTokens) {
+        // Call the actual external API with the concatenated string of tokens
+        return "Response for tokens: " + concatenatedTokens; // Mocked response
+    }
+
+    private Map<String, String> parseApiResponse(String apiResponse, Set<String> tokens) {
+        // Parse the API response and map it back to individual tokens
+        // This is just a mocked example; adapt it to your actual API response structure
+        Map<String, String> responses = new HashMap<>();
+        for (String token : tokens) {
+            responses.put(token, "Response for " + token);
+        }
+        return responses;
+    }
+}
+2. How It Works
+@Cacheable: The getCachedTokenResponse method checks the cache for each individual token. If the token is found in the cache, it returns the cached response; otherwise, it returns null.
+
+@CachePut: The cacheTokenResponse method caches the response for each token after an API call is made for uncached tokens.
+
+Processing Flow:
+
+Step 1: For each token in the Set, check if the response is already cached using @Cacheable.
+Step 2: For tokens that are not cached, concatenate them and make a single API call.
+Step 3: Parse the API response, and cache the response for each token using @CachePut. Combine the cached and new responses into a final map.
+3. Example Usage
+You can use the getResponsesForTokens method in your application like this:
+
+java
+Copy code
+@Autowired
+private TokenService tokenService;
+
+public void processTokens(Set<String> tokens) {
+    Map<String, String> responses = tokenService.getResponsesForTokens(tokens);
+    // Process the responses as needed
+}
+4. Considerations
+Cache Key: Ensure that your cache key uniquely identifies each token. Here, the token itself is used as the key.
+API Response Parsing: Customize the parseApiResponse method to correctly map the API's response back to individual tokens.
+Error Handling: Handle potential errors such as API failures or response parsing issues.
+This approach efficiently uses Spring's caching annotations to minimize redundant API calls, optimizing the performance of your application by caching individual token responses.
