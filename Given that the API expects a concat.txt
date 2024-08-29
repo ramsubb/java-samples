@@ -1,0 +1,82 @@
+Given that the API expects a concatenated string of tokens, you can still cache each token's response individually while sending the tokens in batches. Here's how you can do it:
+
+1. Service Method with Caching
+In this revised method, you will:
+
+First, check which tokens already have cached responses.
+Concatenate only the uncached tokens and make an API call for them.
+Cache the responses for the uncached tokens and combine them with the cached responses.
+java
+Copy code
+@Service
+public class TokenService {
+
+    @Autowired
+    private CacheManager cacheManager;
+
+    public Map<String, String> getResponsesForTokens(Set<String> tokens) {
+        Map<String, String> responses = new HashMap<>();
+        Set<String> uncachedTokens = new HashSet<>();
+
+        Cache cache = cacheManager.getCache("tokenCache");
+
+        // Check cache for each token
+        for (String token : tokens) {
+            String cachedResponse = cache.get(token, String.class);
+            if (cachedResponse != null) {
+                responses.put(token, cachedResponse);
+            } else {
+                uncachedTokens.add(token);
+            }
+        }
+
+        // If there are uncached tokens, make the API call
+        if (!uncachedTokens.isEmpty()) {
+            String concatenatedTokens = String.join(",", uncachedTokens);
+            String apiResponse = externalApiCall(concatenatedTokens); // API call with concatenated tokens
+            Map<String, String> newResponses = parseApiResponse(apiResponse, uncachedTokens);
+
+            // Cache and collect the new responses
+            for (Map.Entry<String, String> entry : newResponses.entrySet()) {
+                cache.put(entry.getKey(), entry.getValue());
+                responses.put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        return responses;
+    }
+
+    private String externalApiCall(String concatenatedTokens) {
+        // Call the actual external API with the concatenated string of tokens
+        return "Response for tokens: " + concatenatedTokens; // Mocked response
+    }
+
+    private Map<String, String> parseApiResponse(String apiResponse, Set<String> tokens) {
+        // Parse the API response and map it back to individual tokens
+        // This is just a mocked example; adapt it to your actual API response structure
+        Map<String, String> responses = new HashMap<>();
+        for (String token : tokens) {
+            responses.put(token, "Response for " + token);
+        }
+        return responses;
+    }
+}
+2. How It Works
+Check Cache: For each token, check if it's already cached.
+Concatenate Uncached Tokens: If some tokens are not cached, concatenate them and make an API call.
+Cache New Responses: Parse the API response, cache each token's response, and merge it with the already cached responses.
+Return Combined Responses: Finally, return a map of all tokens with their corresponding responses.
+3. Example Usage
+java
+Copy code
+@Autowired
+private TokenService tokenService;
+
+public void processTokens(Set<String> tokens) {
+    Map<String, String> responses = tokenService.getResponsesForTokens(tokens);
+    // Process the responses as needed
+}
+4. Considerations
+Parsing API Response: The parseApiResponse method needs to be implemented according to how your API returns data. This method should map each token back to its response.
+Batching: The example assumes that your API can handle concatenated token strings. Adjust the concatenation logic if your API requires a different format.
+This approach should meet your requirement to cache individual token responses while still allowing batch processing with the API.
